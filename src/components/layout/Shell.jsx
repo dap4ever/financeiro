@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
-import { Menu } from 'lucide-react';
+import { Menu, Loader2 } from 'lucide-react';
+import { useFinance } from '../../context/FinanceContext';
 
 const Header = ({ toggleSidebar }) => {
   return (
@@ -13,12 +14,12 @@ const Header = ({ toggleSidebar }) => {
             <h1 className="font-medium" style={{ marginLeft: 'var(--spacing-4)' }}>FinEdu</h1>
         </div>
         <div className="user-profile">
-            <div className="text-right" style={{ display: 'none', '@media (min-width: 640px)': { display: 'block' } }}>
-                <p className="font-medium text-sm">João Silva</p>
+            <div className="text-right desktop-only">
+                <p className="font-medium text-sm">Familia Pérez</p>
                 <p className="text-muted" style={{ fontSize: '0.75rem' }}>Plano Familiar</p>
             </div>
             <div className="user-avatar">
-                JS
+                FP
             </div>
         </div>
       </div>
@@ -29,6 +30,7 @@ const Header = ({ toggleSidebar }) => {
 const Shell = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const { loading } = useFinance();
 
   return (
     <div className="app-shell">
@@ -47,7 +49,12 @@ const Shell = ({ children }) => {
       
       <main className="main-content">
         <div className="container">
-            {children}
+            {loading ? (
+                <div className="flex items-center justify-center p-8 h-full" style={{ minHeight: '50vh' }}>
+                    <Loader2 className="animate-spin text-primary" size={48} />
+                    <span className="ml-4 text-muted">Carregando dados...</span>
+                </div>
+            ) : children}
         </div>
       </main>
     </div>

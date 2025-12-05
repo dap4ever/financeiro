@@ -1,70 +1,128 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../services/supabase';
 
 const FinanceContext = createContext();
 
 export const useFinance = () => useContext(FinanceContext);
 
 export const FinanceProvider = ({ children }) => {
-  // Load from localStorage or default
-  const [transactions, setTransactions] = useState(() => {
-    const saved = localStorage.getItem('transactions');
-    return saved ? JSON.parse(saved) : [
-      { id: 1, description: 'Salário', amount: 5200, type: 'income', date: '2023-10-01', category: 'Salário' },
-      { id: 2, description: 'Supermercado', amount: 450, type: 'expense', date: '2023-10-05', category: 'Alimentação' },
-    ];
-  });
+  const [transactions, setTransactions] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [goals, setGoals] = useState(() => {
-    const saved = localStorage.getItem('goals');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('users');
-    // Initialize empty, replacing old default if it matches exactly or just clean it up
-    if (!saved) return []; 
-    const parsed = JSON.parse(saved);
-    // Migration: Remove 'Eu' and 'Cônjuge' if they exist (based on user request)
-    return parsed.filter(u => u !== 'Eu' && u !== 'Cônjuge');
-  });
-
-  // Persist to localStorage
+  // Fetch Initial Data
   useEffect(() => {
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-  }, [transactions]);
+    fetchData();
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('goals', JSON.stringify(goals));
-  }, [goals]);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+        const [transRes, goalsRes, usersRes] = await Promise.all([
+            supabase.from('transactions').select('*').order('date', { ascending: false }),
+            supabase.from('goals').select('*'),
+            supabase.from('app_users').select('*')
+        ]);
 
-  useEffect(() => {
-    localStorage.setItem('users', JSON.stringify(users));
-  }, [users]);
-
-  const addTransaction = (transaction) => {
-    setTransactions(prev => [{ ...transaction, id: Date.now() }, ...prev]);
-  };
-
-  const removeTransaction = (id) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
-  };
-
-  const addGoal = (goal) => {
-    setGoals(prev => [{ ...goal, id: Date.now() }, ...prev]);
-  };
-
-  const removeGoal = (id) => {
-    setGoals(prev => prev.filter(g => g.id !== id));
-  };
-
-  const addUser = (name) => {
-    if (!users.includes(name)) {
-      setUsers(prev => [...prev, name]);
+        if (transRes.data) setTransactions(transRes.data);
+        if (goalsRes.data) setGoals(goalsRes.data);
+        if (usersRes.data) setUsers(usersRes.data.map(u => u.name));
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    } finally {
+        setLoading(false);
     }
   };
 
-  const removeUser = (name) => {
-    setUsers(prev => prev.filter(u => u !== name));
+  const addTransaction = async (transaction) => {
+    const { data, error } = await supabase
+        .from('transactions')
+        .insert([transaction])
+        .select()
+        .single();
+    
+    if (data && !error) {
+        setTransactions(prev => [data, ...prev]);
+    }
+  };
+
+  const removeTransaction = async (id) => {
+    const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id);
+
+    if (!error) {
+        setTransactions(prev => prev.filter(t => t.id !== id));
+    } else {
+        console.error("Erro ao remover:", error);
+    }
+  };
+
+  const updateTransaction = async (id, updatedTransaction) => {
+    const { data, error } = await supabase
+        .from('transactions')
+        .update(updatedTransaction)
+        .eq('id', id)
+        .select()
+        .single();
+    
+    if (data && !error) {
+        setTransactions(prev => prev.map(t => t.id === id ? data : t));
+    } else {
+        console.error("Erro ao atualizar transação:", error);
+        alert(`Erro ao atualizar: ${error?.message}`);
+    }
+  };
+
+  const addGoal = async (goal) => {
+    const { data, error } = await supabase
+        .from('goals')
+        .insert([goal])
+        .select()
+        .single();
+
+    if (data && !error) {
+        setGoals(prev => [data, ...prev]);
+    }
+  };
+
+  const removeGoal = async (id) => {
+    const { error } = await supabase
+        .from('goals')
+        .delete()
+        .eq('id', id);
+
+    if (!error) {
+        setGoals(prev => prev.filter(g => g.id !== id));
+    }
+  };
+
+  const addUser = async (name) => {
+    if (!users.includes(name)) {
+        const { data, error } = await supabase
+            .from('app_users')
+            .insert([{ name }])
+            .select()
+            .single();
+        
+        if (data && !error) {
+            setUsers(prev => [...prev, data.name]);
+        }
+    }
+  };
+
+  const removeUser = async (name) => {
+    // Note: This matches by name, be careful if names are not unique. Schema enforces unique name.
+    const { error } = await supabase
+        .from('app_users')
+        .delete()
+        .eq('name', name);
+
+    if (!error) {
+        setUsers(prev => prev.filter(u => u !== name));
+    }
   };
 
   const getBalance = () => {
@@ -89,8 +147,10 @@ export const FinanceProvider = ({ children }) => {
     <FinanceContext.Provider value={{
       transactions,
       goals,
+      loading,
       addTransaction,
       removeTransaction,
+      updateTransaction,
       addGoal,
       removeGoal,
       users,

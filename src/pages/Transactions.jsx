@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 
 const Transactions = () => {
-    const { transactions, addTransaction, removeTransaction, users, addUser } = useFinance();
+    const { transactions, addTransaction, removeTransaction, updateTransaction, users, addUser, removeUser } = useFinance();
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingId, setEditingId] = useState(null);
     
     // Form State
     const [description, setDescription] = useState('');
@@ -24,24 +25,46 @@ const Transactions = () => {
             addUser(owner);
         }
 
-        addTransaction({
+        const transactionData = {
             description,
-            amount: parseFloat(amount),
+            amount: Number(amount),
             type,
-            category,
             category,
             context,
             owner,
             date
-        });
+        };
 
-        // Reset form
+        if (editingId) {
+            updateTransaction(editingId, transactionData);
+        } else {
+            addTransaction(transactionData);
+        }
+
+        resetForm();
+    };
+
+    const resetForm = () => {
         setDescription('');
         setAmount('');
         setCategory('');
         setContext('individual');
         setOwner('');
+        setDate(new Date().toISOString().split('T')[0]);
+        setEditingId(null);
         setIsFormOpen(false);
+    };
+
+    const handleEdit = (transaction) => {
+        setEditingId(transaction.id);
+        setDescription(transaction.description);
+        setAmount(transaction.amount);
+        setType(transaction.type);
+        setCategory(transaction.category);
+        setContext(transaction.context);
+        setOwner(transaction.owner || '');
+        setDate(transaction.date);
+        setIsFormOpen(true);
     };
 
     const formatCurrency = (value) => {
@@ -59,7 +82,10 @@ const Transactions = () => {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="page-title">Transações</h2>
                 <button 
-                    onClick={() => setIsFormOpen(!isFormOpen)}
+                    onClick={() => {
+                        resetForm();
+                        setIsFormOpen(!isFormOpen);
+                    }}
                     className="btn btn-primary"
                 >
                     <Plus size={20} />
@@ -70,7 +96,9 @@ const Transactions = () => {
             {/* Form Modal / Panel */}
             {isFormOpen && (
                 <div className="card mb-8">
-                    <h3 className="card-title mb-4" style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text-primary)' }}>Adicionar Transação</h3>
+                    <h3 className="card-title mb-4" style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text-primary)' }}>
+                        {editingId ? 'Editar Transação' : 'Adicionar Transação'}
+                    </h3>
                     <form onSubmit={handleSubmit} className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-4)' }}>
                         <div className="form-group">
                             <label className="form-label">Descrição</label>
@@ -85,12 +113,15 @@ const Transactions = () => {
                         <div className="form-group">
                             <label className="form-label">Valor (R$)</label>
                             <input 
-                                type="number" 
-                                step="0.01"
+                                type="tel" 
                                 className="form-input"
-                                value={amount}
-                                onChange={e => setAmount(e.target.value)}
-                                placeholder="0.00"
+                                value={amount === '' ? '' : formatCurrency(amount)}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, '');
+                                    const numberValue = Number(value) / 100;
+                                    setAmount(numberValue || '');
+                                }}
+                                placeholder="R$ 0,00"
                             />
                         </div>
                         <div className="form-group">
@@ -147,15 +178,40 @@ const Transactions = () => {
                             </select>
                         </div>
                         <div className="form-group">
-                             <label className="form-label">Responsável</label>
-                             <input 
-                                 type="text"
-                                 className="form-input"
-                                 value={owner}
-                                 onChange={e => setOwner(e.target.value)}
-                                 list="users-list"
-                                 placeholder="Digite ou selecione..."
-                             />
+                             <label className="form-label flex justify-between">
+                                Responsável
+                                <span className="text-muted" style={{ fontWeight: 'normal', fontSize: '0.7em' }}>
+                                    (Digite para criar)
+                                </span>
+                             </label>
+                             <div className="flex gap-2">
+                                <input 
+                                    type="text"
+                                    className="form-input"
+                                    value={owner}
+                                    onChange={e => setOwner(e.target.value)}
+                                    list="users-list"
+                                    placeholder="Nome do responsável..."
+                                />
+                                {users.includes(owner) && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-ghost text-danger"
+                                        title="Excluir este responsável para sempre"
+                                        onClick={() => {
+                                            if (window.confirm(`Tem certeza que deseja apagar "${owner}" da lista de responsáveis?`)) {
+                                                const nameToRemove = owner;
+                                                setOwner(''); // Limpa o input
+                                                // Chama função do contexto para remover (verifique se já importou 'removeUser')
+                                                removeUser(nameToRemove); 
+                                            }
+                                        }}
+                                        style={{ padding: '0 var(--spacing-2)' }}
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                )}
+                             </div>
                              <datalist id="users-list">
                                  {users.map(u => (
                                      <option key={u} value={u} />
@@ -174,7 +230,7 @@ const Transactions = () => {
                         <div className="flex justify-end gap-2 mt-4" style={{ gridColumn: '1 / -1' }}>
                              <button 
                                 type="button" 
-                                onClick={() => setIsFormOpen(false)}
+                                onClick={resetForm}
                                 className="btn btn-ghost"
                             >
                                 Cancelar
@@ -183,7 +239,7 @@ const Transactions = () => {
                                 type="submit" 
                                 className="btn btn-primary"
                             >
-                                Salvar
+                                {editingId ? 'Atualizar' : 'Salvar'}
                             </button>
                         </div>
                     </form>
@@ -222,13 +278,24 @@ const Transactions = () => {
                                     {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
                                 </td>
                                 <td className="text-center">
-                                    <button 
-                                        onClick={() => removeTransaction(t.id)}
-                                        className="btn btn-ghost"
-                                        style={{ padding: 'var(--spacing-2)' }}
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
+                                    <div className="flex justify-center gap-2">
+                                        <button 
+                                            onClick={() => handleEdit(t)}
+                                            className="btn btn-ghost"
+                                            style={{ padding: 'var(--spacing-2)' }}
+                                            title="Editar"
+                                        >
+                                            <Pencil size={18} />
+                                        </button>
+                                        <button 
+                                            onClick={() => removeTransaction(t.id)}
+                                            className="btn btn-ghost text-danger"
+                                            style={{ padding: 'var(--spacing-2)' }}
+                                            title="Excluir"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
