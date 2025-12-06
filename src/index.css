@@ -447,6 +447,24 @@ img {
 .gap-4 {
   gap: var(--spacing-4);
 }
+.flex-col {
+  flex-direction: column;
+}
+.items-end {
+  align-items: flex-end;
+}
+.relative {
+  position: relative;
+}
+.absolute {
+  position: absolute;
+}
+.top-4 {
+  top: var(--spacing-4);
+}
+.right-4 {
+  right: var(--spacing-4);
+}
 .mb-4 {
   margin-bottom: var(--spacing-4);
 }

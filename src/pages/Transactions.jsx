@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { Plus, Trash2, Pencil } from 'lucide-react';
+import { Plus, Trash2, Pencil, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Transactions = () => {
-    const { transactions, addTransaction, removeTransaction, updateTransaction, users, addUser, removeUser } = useFinance();
+    const { transactions, filteredTransactions, currentDate, nextMonth, prevMonth, addTransaction, removeTransaction, updateTransaction, users, addUser, removeUser } = useFinance();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     
@@ -77,10 +77,28 @@ const Transactions = () => {
         return `${day}/${month}/${year}`;
     };
 
+    // Format current month for display (e.g., "Janeiro 2024")
+    const monthName = currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+    const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="page-title">Transações</h2>
+                <div>
+                    <h2 className="page-title">Transações</h2>
+                    <div className="flex items-center gap-4 mt-2 bg-white dark:bg-slate-800 p-2 rounded-lg border border-border w-fit">
+                        <button onClick={prevMonth} className="btn btn-ghost p-1" title="Mês Anterior">
+                            <ChevronLeft size={20} />
+                        </button>
+                        <div className="flex items-center gap-2 font-medium min-w-[140px] justify-center">
+                            <Calendar size={18} className="text-muted" />
+                            <span>{capitalizedMonth}</span>
+                        </div>
+                            <button onClick={nextMonth} className="btn btn-ghost p-1" title="Próximo Mês">
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
+                </div>
                 <button 
                     onClick={() => {
                         resetForm();
@@ -259,14 +277,11 @@ const Transactions = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {transactions.map((t) => (
+                        {filteredTransactions.map((t) => (
                             <tr key={t.id}>
                                 <td className="font-medium">{t.description}</td>
                                 <td className="text-muted" style={{ fontSize: 'var(--font-size-sm)' }}>
                                     {t.category} 
-                                    <span style={{ marginLeft: '8px', fontSize: '0.7em', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
-                                        {t.context === 'family' ? 'Familiar' : 'Individual'}
-                                    </span>
                                     {t.owner && (
                                         <span style={{ marginLeft: '4px', fontSize: '0.7em', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--bg-hover)', color: 'var(--accent-primary)' }}>
                                             {t.owner}
@@ -278,7 +293,11 @@ const Transactions = () => {
                                     {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
                                 </td>
                                 <td className="text-center">
-                                    <div className="flex justify-center gap-2">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <span style={{ fontSize: '0.7em', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                                            {t.context === 'family' ? 'Familiar' : 'Individual'}
+                                        </span>
+                                        <div className="flex justify-center gap-2">
                                         <button 
                                             onClick={() => handleEdit(t)}
                                             className="btn btn-ghost"
@@ -296,10 +315,11 @@ const Transactions = () => {
                                             <Trash2 size={18} />
                                         </button>
                                     </div>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
-                        {transactions.length === 0 && (
+                        {filteredTransactions.length === 0 && (
                             <tr>
                                 <td colSpan="5" className="text-center text-muted" style={{ padding: 'var(--spacing-8)' }}>
                                     Nenhuma transação encontrada.

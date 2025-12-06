@@ -59,6 +59,6 @@ Rode o script SQL disponível em `src/db/schema.sql` no SQL Editor do seu projet
 
 ---
 
-Desenvolvido com 💙 para organização financeira por Danilo ALves Pérez.
+Desenvolvido com 💙 para organização financeira por Danilo Alves Pérez.
 
 devwebwizards.com
