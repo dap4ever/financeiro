@@ -50,8 +50,17 @@ const Dashboard = () => {
     const calculateProgress = (current, target) => {
         if (!target) return 0;
         const percent = (current / target) * 100;
-        return Math.min(percent, 100).toFixed(0);
+        return Math.min(percent, 100).toFixed(2);
     };
+
+    // Calculate total goals and saved amount
+    const totalGoalsAmount = useMemo(() => {
+        return goals.reduce((acc, goal) => acc + goal.targetAmount, 0);
+    }, [goals]);
+
+    const totalSavedAmount = useMemo(() => {
+        return goals.reduce((acc, goal) => acc + goal.currentAmount, 0);
+    }, [goals]);
 
     const lastTransactions = useMemo(() => {
         return [...dashboardTransactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
@@ -102,7 +111,7 @@ const Dashboard = () => {
 
     return (
       <div>
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-8">
             <h2 className="page-title">Visão Geral</h2>
             
             {/* Filters */}
@@ -138,32 +147,32 @@ const Dashboard = () => {
                 </div>
             </div>
         </div>
-        <div className="dashboard-grid">
+        <div className="dashboard-grid" style={{ marginBottom: 'var(--spacing-8)' }}>
           {/* Card Saldo */}
-          <div className="card">
-            <h3 className="card-title">Saldo Mensal</h3>
-            <p className={`card-value ${balance >= 0 ? 'text-primary' : 'text-danger'}`}>
+          <div className="card" style={{ padding: 'var(--spacing-6)' }}>
+            <h3 className="card-title" style={{ marginBottom: 'var(--spacing-3)' }}>Saldo Mensal</h3>
+            <p className={`card-value ${balance >= 0 ? 'text-primary' : 'text-danger'}`} style={{ marginBottom: 'var(--spacing-4)' }}>
                 {formatCurrency(balance)}
             </p>
-            <div className="mt-4 flex items-center text-sm text-muted">
+            <div className="flex items-center text-sm text-muted">
               <span>Atualizado agora</span>
             </div>
           </div>
           
-          <div className="card">
-            <h3 className="card-title">Receitas</h3>
+          <div className="card" style={{ padding: 'var(--spacing-6)' }}>
+            <h3 className="card-title" style={{ marginBottom: 'var(--spacing-3)' }}>Receitas</h3>
             <p className="card-value text-success">{formatCurrency(income)}</p>
           </div>
   
-          <div className="card">
-            <h3 className="card-title">Despesas</h3>
+          <div className="card" style={{ padding: 'var(--spacing-6)' }}>
+            <h3 className="card-title" style={{ marginBottom: 'var(--spacing-3)' }}>Despesas</h3>
             <p className="card-value text-danger">{formatCurrency(expenses)}</p>
           </div>
         </div>
 
         {/* Chart Section */}
-        <div className="card mt-6 mb-6" style={{ height: '400px' }}>
-            <h3 className="font-bold mb-4" style={{ fontSize: 'var(--font-size-lg)' }}>Finanças por Responsável</h3>
+        <div className="card" style={{ height: '420px', padding: 'var(--spacing-6)', marginBottom: 'var(--spacing-8)' }}>
+            <h3 className="font-bold" style={{ fontSize: 'var(--font-size-lg)', marginBottom: 'var(--spacing-5)' }}>Finanças por Responsável</h3>
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     data={chartData}
@@ -189,21 +198,21 @@ const Dashboard = () => {
         </div>
   
         <div className="two-col-grid">
-            <div className="card">
-                <h3 className="font-bold mb-4" style={{ fontSize: 'var(--font-size-lg)' }}>Últimas Transações</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
+            <div className="card" style={{ padding: 'var(--spacing-6)' }}>
+                <h3 className="font-bold" style={{ fontSize: 'var(--font-size-lg)', marginBottom: 'var(--spacing-5)' }}>Últimas Transações</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-5)' }}>
                     {lastTransactions.length === 0 ? (
                         <p className="text-muted text-sm">Nenhuma transação recente.</p>
                     ) : (
                         lastTransactions.map((t) => (
-                            <div key={t.id} className="flex justify-between items-center" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: 'var(--spacing-2)' }}>
-                                <div>
-                                    <p className="font-medium">{t.description}</p>
+                            <div key={t.id} className="flex justify-between items-center" style={{ paddingBottom: 'var(--spacing-4)', borderBottom: '1px solid var(--border-color)' }}>
+                                <div style={{ flex: 1 }}>
+                                    <p className="font-medium" style={{ marginBottom: 'var(--spacing-1)', color: 'var(--text-primary)' }}>{t.description}</p>
                                     <p className="text-muted" style={{ fontSize: 'var(--font-size-xs)' }}>
                                         {t.category} • {formatDate(t.date)}
                                     </p>
                                 </div>
-                                <span className={`font-bold ${t.type === 'income' ? 'text-success' : 'text-danger'}`}>
+                                <span className={`font-bold ${t.type === 'income' ? 'text-success' : 'text-danger'}`} style={{ fontSize: 'var(--font-size-base)', whiteSpace: 'nowrap', marginLeft: 'var(--spacing-4)' }}>
                                     {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
                                 </span>
                             </div>
@@ -212,30 +221,89 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <div className="card">
-                <h3 className="font-bold mb-4" style={{ fontSize: 'var(--font-size-lg)' }}>Metas em Progresso</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
+            <div className="card" style={{ padding: 'var(--spacing-6)', display: 'flex', flexDirection: 'column' }}>
+                <h3 className="font-bold" style={{ fontSize: 'var(--font-size-lg)', marginBottom: 'var(--spacing-5)' }}>Metas em Progresso</h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)', flex: 1 }}>
                     {goals.length === 0 ? (
                          <p className="text-muted text-sm">Nenhuma meta cadastrada.</p>
                     ) : (
                         goals.slice(0, 3).map(goal => {
                             const progress = calculateProgress(goal.currentAmount, goal.targetAmount);
                             return (
-                                <div key={goal.id}>
-                                    <div className="flex justify-between text-sm mb-1">
-                                        <span className="font-medium">{goal.description}</span>
-                                        <span className="text-muted">{progress}%</span>
+                                <div key={goal.id} style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)' }}>
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', backgroundColor: 'var(--bg-hover)' }}>
+                                        <div style={{ height: '100%', backgroundColor: 'var(--accent-secondary)', width: `${progress}%`, transition: 'width 0.5s ease' }}></div>
                                     </div>
-                                    <div style={{ height: '6px', backgroundColor: 'var(--bg-primary)', borderRadius: '3px', overflow: 'hidden' }}>
-                                        <div 
-                                            style={{ height: '100%', backgroundColor: 'var(--accent-secondary)', width: `${progress}%` }}
-                                        ></div>
+                                    <div style={{ padding: 'var(--spacing-4)' }}>
+                                        <div className="flex items-center justify-between" style={{ marginBottom: 'var(--spacing-2)' }}>
+                                            <h4 className="font-semibold" style={{ fontSize: 'var(--font-size-base)', color: 'var(--text-primary)' }}>{goal.description}</h4>
+                                            <div style={{ 
+                                                backgroundColor: 'var(--accent-secondary)', 
+                                                color: 'white',
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                fontSize: 'var(--font-size-xs)',
+                                                fontWeight: 'bold',
+                                                minWidth: '52px',
+                                                textAlign: 'center'
+                                            }}>
+                                                {progress}%
+                                            </div>
+                                        </div>
+                                        <div className="flex items-baseline gap-2" style={{ marginBottom: 'var(--spacing-3)' }}>
+                                            <span style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'bold', color: 'var(--accent-secondary)' }}>
+                                                {formatCurrency(goal.currentAmount)}
+                                            </span>
+                                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                                                de {formatCurrency(goal.targetAmount)}
+                                            </span>
+                                        </div>
+                                        <div style={{ height: '10px', backgroundColor: 'var(--bg-hover)', borderRadius: '5px', overflow: 'hidden' }}>
+                                            <div style={{ 
+                                                height: '100%', 
+                                                backgroundColor: 'var(--accent-secondary)', 
+                                                width: `${progress}%`, 
+                                                transition: 'width 0.5s ease',
+                                                boxShadow: `${progress > 0 ? '0 0 8px rgba(34, 197, 94, 0.4)' : 'none'}`
+                                            }}></div>
+                                        </div>
                                     </div>
                                 </div>
                             );
                         })
                     )}
                 </div>
+
+                {goals.length > 0 && (
+                    <div style={{ 
+                        marginTop: 'var(--spacing-6)',
+                        background: 'linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-card) 100%)',
+                        borderRadius: 'var(--radius-lg)',
+                        padding: 'var(--spacing-5)',
+                        paddingLeft: '15px',
+                        border: '1px solid var(--border-color)'
+                    }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-6)', alignItems: 'center' }}>
+                            <div style={{ borderRight: '1px solid var(--border-color)', paddingRight: 'var(--spacing-5)', paddingTop: 'var(--spacing-2)', paddingBottom: 'var(--spacing-2)' }}>
+                                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginBottom: 'var(--spacing-2)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>
+                                    Total em Metas
+                                </div>
+                                <div className="font-bold" style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text-primary)' }}>
+                                    {formatCurrency(totalGoalsAmount)}
+                                </div>
+                            </div>
+                            <div style={{ paddingLeft: 'var(--spacing-3)', paddingTop: 'var(--spacing-2)', paddingBottom: 'var(--spacing-2)' }}>
+                                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginBottom: 'var(--spacing-2)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>
+                                    Economizado
+                                </div>
+                                <div className="font-bold text-success" style={{ fontSize: 'var(--font-size-lg)' }}>
+                                    {formatCurrency(totalSavedAmount)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
       </div>

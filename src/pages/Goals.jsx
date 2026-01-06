@@ -66,7 +66,7 @@ const Goals = () => {
     const calculateProgress = (current, target) => {
         if (!target) return 0;
         const percent = (current / target) * 100;
-        return Math.min(percent, 100).toFixed(0);
+        return Math.min(percent, 100).toFixed(2);
     };
 
     return (
